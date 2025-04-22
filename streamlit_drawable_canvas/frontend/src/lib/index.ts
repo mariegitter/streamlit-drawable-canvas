@@ -10,8 +10,8 @@ import TextTool from "./text";
 import EmojiTool from "./emoji";
 import ImageTool from './imagetool'; // Import the ImageTool
 import EraserTool from './eraser'; // Import the ImageTool
-
-
+import DisplacementTool from './displacement';
+import AdjustmentTool from './point_adjustment';
 
 
 // TODO: Should make TS happy on the Map of selectedTool --> FabricTool
@@ -27,6 +27,8 @@ const tools: any = {
   emoji: EmojiTool,
   image: ImageTool,
   eraser: EraserTool,
+  displacement: DisplacementTool,
+  point_adjustment: AdjustmentTool,
 }
 
 export { tools, FabricTool }

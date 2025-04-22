@@ -111,11 +111,17 @@ useEffect(() => {
   const imgC = new fabric.StaticCanvas("backgroundimage-canvas", {
     enableRetinaScaling: false,
   });
+
   setCanvas(c);
   setBackgroundCanvas(imgC);
+
+  // Reset zoom right after setting the canvas
+  c.setZoom(1);
+  c.setViewportTransform([1, 0, 0, 1, 0, 0]);
+  c.renderAll();
+
   Streamlit.setFrameHeight();
-  
-  // Clean up the canvas on component unmount to avoid memory leaks
+
   return () => {
     c.dispose();
     imgC.dispose();
@@ -151,6 +157,77 @@ useEffect(() => {
   }
 }, [canvas])
 
+useEffect(() => {
+  if (!canvas) return
+
+  const PAN_STEP = 50
+  const canvasElement = canvas.getElement()
+  const canvasContainer = canvasElement?.parentNode as HTMLElement | null
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (
+      ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)
+    ) {
+      e.preventDefault()
+    }
+
+    let delta: fabric.Point | null = null
+
+    switch (e.key) {
+      case "ArrowLeft":
+        delta = new fabric.Point(PAN_STEP, 0)
+        break
+      case "ArrowRight":
+        delta = new fabric.Point(-PAN_STEP, 0)
+        break
+      case "ArrowUp":
+        delta = new fabric.Point(0, PAN_STEP)
+        break
+      case "ArrowDown":
+        delta = new fabric.Point(0, -PAN_STEP)
+        break
+    }
+
+    if (delta) {
+      canvas.discardActiveObject()
+      canvas.relativePan(delta)
+      canvas.setCursor("move")
+      canvas.renderAll()
+    }
+  }
+
+  const handleKeyUp = (e: KeyboardEvent) => {
+    if (
+      ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)
+    ) {
+      e.preventDefault()
+      canvas.setCursor("default")
+      canvas.renderAll()
+    }
+  }
+
+  if (canvasContainer) {
+    // Make focusable
+    canvasContainer.setAttribute("tabindex", "0")
+    canvasContainer.style.outline = "none" // optional
+
+    // Delay the focus to next frame to ensure it's applied
+    requestAnimationFrame(() => {
+      canvasContainer?.focus()
+    })
+
+    canvasContainer.addEventListener("keydown", handleKeyDown)
+    canvasContainer.addEventListener("keyup", handleKeyUp)
+  }
+
+  return () => {
+    if (canvasContainer) {
+      canvasContainer.removeEventListener("keydown", handleKeyDown)
+      canvasContainer.removeEventListener("keyup", handleKeyUp)
+    }
+  }
+}, [canvas])
+
 
 // Handle resize logic without reinitializing the canvas
 useEffect(() => {
@@ -181,8 +258,6 @@ useEffect(() => {
   // Call the resize handler whenever width or height changes
   handleResize();
 }, [canvasWidth, canvasHeight, canvas, backgroundCanvas]);
-  
-  
   
 
   /**
